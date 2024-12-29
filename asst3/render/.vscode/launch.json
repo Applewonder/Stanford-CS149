@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Debug with cuda-gdb",
+            "type": "cuda-gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/render",
+            "args": "-r cuda rand10k",
+        }
+    ]
+}

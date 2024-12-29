@@ -1,0 +1,50 @@
+[
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/main.cpp.o -c /home/apple/cs149/asst3/render/main.cpp",
+  "file": "/home/apple/cs149/asst3/render/main.cpp",
+  "output": "CMakeFiles/Render.dir/main.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/display.cpp.o -c /home/apple/cs149/asst3/render/display.cpp",
+  "file": "/home/apple/cs149/asst3/render/display.cpp",
+  "output": "CMakeFiles/Render.dir/display.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/refRenderer.cpp.o -c /home/apple/cs149/asst3/render/refRenderer.cpp",
+  "file": "/home/apple/cs149/asst3/render/refRenderer.cpp",
+  "output": "CMakeFiles/Render.dir/refRenderer.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/noise.cpp.o -c /home/apple/cs149/asst3/render/noise.cpp",
+  "file": "/home/apple/cs149/asst3/render/noise.cpp",
+  "output": "CMakeFiles/Render.dir/noise.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/ppm.cpp.o -c /home/apple/cs149/asst3/render/ppm.cpp",
+  "file": "/home/apple/cs149/asst3/render/ppm.cpp",
+  "output": "CMakeFiles/Render.dir/ppm.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/bin/g++    -O3 -Wall -g -g -o CMakeFiles/Render.dir/sceneLoader.cpp.o -c /home/apple/cs149/asst3/render/sceneLoader.cpp",
+  "file": "/home/apple/cs149/asst3/render/sceneLoader.cpp",
+  "output": "CMakeFiles/Render.dir/sceneLoader.cpp.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/local/cuda-12.6/bin/nvcc -forward-unknown-to-host-compiler    -O3 -m64 -g -std=c++17 -G -x cu -rdc=true -c /home/apple/cs149/asst3/render/cudaRenderer.cu -o CMakeFiles/Render.dir/cudaRenderer.cu.o",
+  "file": "/home/apple/cs149/asst3/render/cudaRenderer.cu",
+  "output": "CMakeFiles/Render.dir/cudaRenderer.cu.o"
+},
+{
+  "directory": "/home/apple/cs149/asst3/render/build",
+  "command": "/usr/local/cuda-12.6/bin/nvcc -forward-unknown-to-host-compiler    -O3 -m64 -g -std=c++17 -G -x cu -rdc=true -c /home/apple/cs149/asst3/render/benchmark.cu -o CMakeFiles/Render.dir/benchmark.cu.o",
+  "file": "/home/apple/cs149/asst3/render/benchmark.cu",
+  "output": "CMakeFiles/Render.dir/benchmark.cu.o"
+}
+]

@@ -1,0 +1,5 @@
+/home/apple/cs149/asst3/render/build/CMakeFiles/Render.dir
+/home/apple/cs149/asst3/render/build/CMakeFiles/check.dir
+/home/apple/cs149/asst3/render/build/CMakeFiles/clean_logs.dir
+/home/apple/cs149/asst3/render/build/CMakeFiles/edit_cache.dir
+/home/apple/cs149/asst3/render/build/CMakeFiles/rebuild_cache.dir
