@@ -175,9 +175,12 @@ CheckBenchmark(
         if (frame >= startFrame) {
             double startFileSaveTime = CycleTimer::currentSeconds();
             if (dumpFrames) {
-                char filename[1024];
-                sprintf(filename, "%s_%04d.ppm", frameFilename.c_str(), frame);
-                writePPMImage(cuda_renderer->getImage(), filename);
+                char ref_filename[1024];
+                sprintf(ref_filename, "ref_%s_%04d.ppm", frameFilename.c_str(), frame);
+                writePPMImage(ref_renderer->getImage(), ref_filename);
+                char cuda_filename[1024];
+                sprintf(cuda_filename, "cuda_%s_%04d.ppm", frameFilename.c_str(), frame);
+                writePPMImage(cuda_renderer->getImage(), cuda_filename);
                 //renderer->dumpParticles("snow.par");
             }
 

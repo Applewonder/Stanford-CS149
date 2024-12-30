@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <math.h>
 #include <stdio.h>
+#include <iostream>
 #include <vector>
+#include <fstream>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -532,6 +534,72 @@ CudaRenderer::setup() {
         printf("   SMs:        %d\n", deviceProps.multiProcessorCount);
         printf("   Global mem: %.0f MB\n", static_cast<float>(deviceProps.totalGlobalMem) / (1024 * 1024));
         printf("   CUDA Cap:   %d.%d\n", deviceProps.major, deviceProps.minor);
+        //  printf("%s Starting ...\n",argv[0]);
+    // int deviceCount = 0;
+    // cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+    // if(error_id!=cudaSuccess)
+    // {
+    //     printf("cudaGetDeviceCount returned %d\n ->%s\n",
+    //           (int)error_id,cudaGetErrorString(error_id));
+    //     printf("Result = FAIL\n");
+    //     exit(EXIT_FAILURE);
+    // }
+    // if(deviceCount==0)
+    // {
+    //     printf("There are no available device(s) that support CUDA\n");
+    // }
+    // else
+    // {
+    //     printf("Detected %d CUDA Capable device(s)\n",deviceCount);
+    // }
+    // int dev=0,driverVersion=0,runtimeVersion=0;
+    // cudaSetDevice(dev);
+    // cudaDeviceProp deviceProp;
+    // cudaGetDeviceProperties(&deviceProp,dev);
+    // printf("Device %d:\"%s\"\n",dev,deviceProp.name);
+    // cudaDriverGetVersion(&driverVersion);
+    // cudaRuntimeGetVersion(&runtimeVersion);
+    // printf("  CUDA Driver Version / Runtime Version         %d.%d  /  %d.%d\n",
+    //     driverVersion/1000,(driverVersion%100)/10,
+    //     runtimeVersion/1000,(runtimeVersion%100)/10);
+    // printf("  CUDA Capability Major/Minor version number:   %d.%d\n",
+    //     deviceProp.major,deviceProp.minor);
+    // printf("  Total amount of global memory:                %.2f MBytes (%llu bytes)\n",
+    //         (float)deviceProp.totalGlobalMem/pow(1024.0,3));
+    // printf("  GPU Clock rate:                               %.0f MHz (%0.2f GHz)\n",
+    //         deviceProp.clockRate*1e-3f,deviceProp.clockRate*1e-6f);
+    // printf("  Memory Bus width:                             %d-bits\n",
+    //         deviceProp.memoryBusWidth);
+    // if (deviceProp.l2CacheSize)
+    // {
+    //     printf("  L2 Cache Size:                            	%d bytes\n",
+    //             deviceProp.l2CacheSize);
+    // }
+    // printf("  Max Texture Dimension Size (x,y,z)            1D=(%d),2D=(%d,%d),3D=(%d,%d,%d)\n",
+    //         deviceProp.maxTexture1D,deviceProp.maxTexture2D[0],deviceProp.maxTexture2D[1]
+    //         ,deviceProp.maxTexture3D[0],deviceProp.maxTexture3D[1],deviceProp.maxTexture3D[2]);
+    // printf("  Max Layered Texture Size (dim) x layers       1D=(%d) x %d,2D=(%d,%d) x %d\n",
+    //         deviceProp.maxTexture1DLayered[0],deviceProp.maxTexture1DLayered[1],
+    //         deviceProp.maxTexture2DLayered[0],deviceProp.maxTexture2DLayered[1],
+    //         deviceProp.maxTexture2DLayered[2]);
+    // printf("  Total amount of constant memory               %lu bytes\n",
+    //         deviceProp.totalConstMem);
+    // printf("  Total amount of shared memory per block:      %lu bytes\n",
+    //         deviceProp.sharedMemPerBlock);
+    // printf("  Total number of registers available per block:%d\n",
+    //         deviceProp.regsPerBlock);
+    // printf("  Wrap size:                                    %d\n",deviceProp.warpSize);
+    // printf("  Maximun number of thread per multiprocesser:  %d\n",
+    //         deviceProp.maxThreadsPerMultiProcessor);
+    // printf("  Maximun number of thread per block:           %d\n",
+    //         deviceProp.maxThreadsPerBlock);
+    // printf("  Maximun size of each dimension of a block:    %d x %d x %d\n",
+    //         deviceProp.maxThreadsDim[0],deviceProp.maxThreadsDim[1],deviceProp.maxThreadsDim[2]);
+    // printf("  Maximun size of each dimension of a grid:     %d x %d x %d\n",
+    //         deviceProp.maxGridSize[0],
+	//     deviceProp.maxGridSize[1],
+	//     deviceProp.maxGridSize[2]);
+    // printf("  Maximu memory pitch                           %lu bytes\n",deviceProp.memPitch);
     }
     printf("---------------------------------------------------------\n");
     
@@ -769,19 +837,19 @@ CudaRenderer::advanceAnimation() {
 
 
 __global__ void
-kernelInitializePixelCircleList(unsigned int* pixel_circle_list,
+kernelInitializePixelCircleList(unsigned int** pixel_circle_list,
                                 unsigned int* pixel_circle_list_capacity,
-                                unsigned int* buf,
-                                unsigned int* buf_size,
                                 unsigned int numCircles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= cuConstRendererParams.imageWidth * cuConstRendererParams.imageHeight)
         return;
-    // pixel_circle_list[index] = (unsigned int*) malloc(256 * sizeof(unsigned int));
-    // pixel_circle_list_capacity[index] = 256;
+    // pixel_circle_list[index] = new unsigned int[1];
+    pixel_circle_list[index] = (unsigned int*) malloc(1024 * sizeof(unsigned int));
+    if (pixel_circle_list[index] == nullptr) {
+        // printf("malloc failed\n");
+    }
+    pixel_circle_list_capacity[index] = 1024;
     // pixel_circle_list[index] = (int*)malloc(numCircles * sizeof(int));
-    pixel_circle_list[index] = atomicAdd(buf_size, 129);
-    pixel_circle_list_capacity[index] = 128;
 }
 
 __global__ void
@@ -789,30 +857,66 @@ kernelDeletePixelCircleList(unsigned int** pixel_circle_list, int numCircles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= cuConstRendererParams.imageWidth * cuConstRendererParams.imageHeight)
         return;
-    // delete[] pixel_circle_list[index];
-    free(pixel_circle_list[index]);
+    delete[] pixel_circle_list[index];
+    // free(pixel_circle_list[index]);
 }
 
-// __global__ void
-// kernelAssignPixelsHelper(int** pixel_circle_list,
-//                          int* pixel_circle_list_size,
-//                          int circle_id,
-//                          int screenMinX,
-//                          int screenMaxX,
-//                          int screenMinY,
-//                          int screenMaxY) {
-//     int index = blockIdx.x * blockDim.x + threadIdx.x;
-//     int width = screenMaxX - screenMinX;
-//     int height = screenMaxY - screenMinY;
-//     if (index >= width * height)
-//         return;
+__global__ void
+kernelAssignPixelsHelper(unsigned int** pixel_circle_list,
+                         unsigned int* pixel_circle_list_size,
+                         unsigned int* pixel_circle_list_capacity,
+                         unsigned int* pixel_circle_lock_list,
+                         int circle_id,
+                         int screenMinX,
+                         int screenMaxX,
+                         int screenMinY,
+                         int screenMaxY) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int width = screenMaxX - screenMinX;
+    int height = screenMaxY - screenMinY;
+    if (index >= width * height)
+        return;
     
-//     int pixelX = index % width + screenMinX;
-//     int pixelY = index / width + screenMinY;
-//     int i = pixelX * cuConstRendererParams.imageWidth + pixelY;
-//     int write_idx = atomicAdd(&pixel_circle_list_size[i], 1);
-//     pixel_circle_list[i][write_idx] = circle_id;
-// }
+    int pixelX = index % width + screenMinX;
+    int pixelY = index / width + screenMinY;
+    int i = pixelY * cuConstRendererParams.imageWidth + pixelX;
+    // unsigned int write_idx = pixel_circle_list_size[i], assumed;
+    // do {
+    //     assumed = write_idx;
+    //     write_idx = atomicCAS(&pixel_circle_list_size[i], assumed, assumed + 1);
+    // } while (assumed != write_idx);
+    // unsigned int lock = 0;
+    // __syncthreads();
+    bool blocked = true;
+    while (blocked) {
+        if (0 == atomicCAS(&pixel_circle_lock_list[i], 0, 1)) {
+            unsigned int write_idx = atomicInc(&pixel_circle_list_size[i], UINT_MAX);
+            pixel_circle_list[i][write_idx] = circle_id;
+            atomicExch(&pixel_circle_lock_list[i], 0U);
+            blocked = false;
+        }
+    }
+    // while (atomicExch(&pixel_circle_lock_list[i], 1U) == 1U);
+    // unsigned int write_idx = atomicInc_system(&pixel_circle_list_size[i], UINT_MAX);
+    // while (atomicAdd(&pixel_circle_list_capacity[i], 0)< write_idx) {
+    //     printf("=================hohoho============================\n");
+    // }
+    // if (pixel_circle_list_capacity[i] == write_idx) {
+    //     printf("=================Wow============================\n");
+    //     unsigned int* new_buf = (unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(unsigned int));
+    //     // unsigned int* new_buf = new unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //     if (new_buf == nullptr) {
+    //         // printf("failed at assignment\n");
+    //     }
+    //     memcpy((void*) new_buf, (void *) pixel_circle_list[i], pixel_circle_list_capacity[i] * sizeof(unsigned int));
+
+    //     free(pixel_circle_list[i]);
+    //     pixel_circle_list[i] = new_buf;
+    //     atomicAdd_system(&pixel_circle_list_capacity[i], 256);
+    // }
+    // pixel_circle_list[i][write_idx] = circle_id;
+    // atomicExch(&pixel_circle_lock_list[i], 0U);
+}
 
 // #define CHUNK_SIZE 1024
 
@@ -837,11 +941,10 @@ getCircle2(unsigned int* pixel_circle_list, unsigned int* buf, int i, int j) {
 }
 
 __global__ void
-kernelAssignPixels(unsigned int* pixel_circle_list,
+kernelAssignPixels(unsigned int** pixel_circle_list,
                    unsigned int* pixel_circle_list_size,
                    unsigned int* pixel_circle_list_capacity,
-                   unsigned int* buf,
-                   unsigned int* buf_size,
+                   unsigned int* pixel_circle_lock_list,
                    int numCircles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= numCircles)
@@ -871,61 +974,242 @@ kernelAssignPixels(unsigned int* pixel_circle_list,
     // float invWidth = 1.f / imageWidth;
     // float invHeight = 1.f / imageHeight;
 
-    // for all pixels in the bonding box
-    // kernelAssignPixelsHelper<<<((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + blockDim.x - 1) / blockDim.x, blockDim>>>(pixel_circle_list, pixel_circle_list_size, index, screenMinX, screenMaxX, screenMinY, screenMaxY);
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         while (atomicExch_system(&pixel_circle_lock_list[i], 1U) == 0U);
+    //         i++;
+    //     }
+    // }
 
-    for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
-        int i = pixelY * imageWidth + screenMinX;
-        for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
-            // int write_idx = atomicAdd(&pixel_circle_list_size[i], 1);
-            int write_idx = atomicInc(&pixel_circle_list_size[i], UINT_MAX);
-            // if (pixel_circle_list_capacity[index] < write_idx) {
-            //     return;
-            // }
-            // if (10 <= write_idx) {
-            //     i++;
-            //     continue;
-            // }
-            while (pixel_circle_list_capacity[i] < write_idx);
-            if (pixel_circle_list_capacity[i] == write_idx) {
-                // unsigned int* new_buf = (unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
-                // memcpy(new_buf, pixel_circle_list[i], pixel_circle_list_capacity[i] * sizeof(int));
-                // free(pixel_circle_list[i]);
-                // pixel_circle_list[i] = new_buf;
-                // atomicAdd(&pixel_circle_list_capacity[i], 256);
-                getCircle2(pixel_circle_list, buf, i, write_idx) = atomicAdd(buf_size, 128);
-                atomicAdd(&pixel_circle_list_capacity[i], 128);
-            }
-            // if (!pixel_circle_list[i]) {
-            //     pixel_circle_list[i] = (int*)malloc(numCircles * sizeof(int));
-            // }
-            // __syncthreads();
-            // unsigned int* ptr = &pixel_circle_list[i][write_idx];
-            // *ptr = index;
-            // atomicAdd(&pixel_circle_list[i][write_idx], index);
-            getCircle(pixel_circle_list, buf, i, write_idx) = index;
-            i++;
-        }
-    }
+    // for all pixels in the bonding box
+    kernelAssignPixelsHelper<<<((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + blockDim.x - 1) / blockDim.x, blockDim>>>(pixel_circle_list, pixel_circle_list_size, pixel_circle_list_capacity, pixel_circle_lock_list, index, screenMinX, screenMaxX, screenMinY, screenMaxY);
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         atomicExch_system(&pixel_circle_lock_list[i], 0U);
+    //         i++;
+    //     }
+    // }
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         // int write_idx = atomicAdd(&pixel_circle_list_size[i], 1);
+    //         int write_idx = atomicInc(&pixel_circle_list_size[i], UINT_MAX);
+    //         // if (pixel_circle_list_capacity[index] < write_idx) {
+    //         //     return;
+    //         // }
+    //         // if (10 <= write_idx) {
+    //         //     i++;
+    //         //     continue;
+    //         // }
+    //         while (pixel_circle_list_capacity[i] < write_idx);
+    //         if (pixel_circle_list_capacity[i] == write_idx) {
+    //             unsigned int* new_buf = (unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             // unsigned int* new_buf = new unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             if (new_buf == nullptr) {
+    //                 printf("failed at assignment\n");
+    //             }
+    //             memcpy(new_buf, pixel_circle_list[i], pixel_circle_list_capacity[i] * sizeof(int));
+    //             free(pixel_circle_list[i]);
+    //             pixel_circle_list[i] = new_buf;
+    //             atomicAdd(&pixel_circle_list_capacity[i], 256);
+    //         }
+    //         // if (!pixel_circle_list[i]) {
+    //         //     pixel_circle_list[i] = (int*)malloc(numCircles * sizeof(int));
+    //         // }
+    //         // __syncthreads();
+    //         // unsigned int* ptr = &pixel_circle_list[i][write_idx];
+    //         // *ptr = index;
+    //         atomicAdd(&pixel_circle_list[i][write_idx], index);
+    //         i++;
+    //     }
+    // }
+}
+
+__global__ void
+kernelAssignPixels2(unsigned int** pixel_circle_list,
+                    unsigned int* pixel_circle_list_size,
+                    unsigned int* pixel_circle_list_capacity,
+                    unsigned int* pixel_circle_lock_list,
+                    int numCircles,
+                    int index) {
+    // int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= numCircles)
+        return;
+    
+    // read position and radius
+    float3 p = ((float3*) cuConstRendererParams.position)[index];
+    float  rad = cuConstRendererParams.radius[index];
+
+    // compute the bounding box of the circle. The bound is in integer
+    // screen coordinates, so it's clamped to the edges of the screen.
+    short imageWidth = cuConstRendererParams.imageWidth;
+    short imageHeight = cuConstRendererParams.imageHeight;
+    short minX = static_cast<short>(imageWidth * (p.x - rad));
+    short maxX = static_cast<short>(imageWidth * (p.x + rad)) + 1;
+    short minY = static_cast<short>(imageHeight * (p.y - rad));
+    short maxY = static_cast<short>(imageHeight * (p.y + rad)) + 1;
+
+    // a bunch of clamps.  Is there a CUDA built-in for this?
+    short screenMinX = (minX > 0) ? ((minX < imageWidth) ? minX : imageWidth) : 0;
+    short screenMaxX = (maxX > 0) ? ((maxX < imageWidth) ? maxX : imageWidth) : 0;
+    short screenMinY = (minY > 0) ? ((minY < imageHeight) ? minY : imageHeight) : 0;
+    short screenMaxY = (maxY > 0) ? ((maxY < imageHeight) ? maxY : imageHeight) : 0;
+
+    // fprintf(stderr, "%d", screenMaxX - screenMinX);
+
+    // float invWidth = 1.f / imageWidth;
+    // float invHeight = 1.f / imageHeight;
+
+    // for all pixels in the bonding box
+    kernelAssignPixelsHelper<<<((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + blockDim.x - 1) / blockDim.x, blockDim>>>(pixel_circle_list, pixel_circle_list_size, pixel_circle_list_capacity, pixel_circle_lock_list, index, screenMinX, screenMaxX, screenMinY, screenMaxY);
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         // int write_idx = atomicAdd(&pixel_circle_list_size[i], 1);
+    //         int write_idx = atomicInc(&pixel_circle_list_size[i], UINT_MAX);
+    //         // if (pixel_circle_list_capacity[index] < write_idx) {
+    //         //     return;
+    //         // }
+    //         // if (10 <= write_idx) {
+    //         //     i++;
+    //         //     continue;
+    //         // }
+    //         while (pixel_circle_list_capacity[i] < write_idx);
+    //         if (pixel_circle_list_capacity[i] == write_idx) {
+    //             unsigned int* new_buf = (unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             // unsigned int* new_buf = new unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             if (new_buf == nullptr) {
+    //                 printf("failed at assignment\n");
+    //             }
+    //             memcpy(new_buf, pixel_circle_list[i], pixel_circle_list_capacity[i] * sizeof(int));
+    //             free(pixel_circle_list[i]);
+    //             pixel_circle_list[i] = new_buf;
+    //             atomicAdd(&pixel_circle_list_capacity[i], 256);
+    //         }
+    //         // if (!pixel_circle_list[i]) {
+    //         //     pixel_circle_list[i] = (int*)malloc(numCircles * sizeof(int));
+    //         // }
+    //         // __syncthreads();
+    //         // unsigned int* ptr = &pixel_circle_list[i][write_idx];
+    //         // *ptr = index;
+    //         atomicAdd(&pixel_circle_list[i][write_idx], index);
+    //         i++;
+    //     }
+    // }
+}
+
+__global__ void
+kernelAssignPixels3(unsigned int** pixel_circle_list,
+                    unsigned int* pixel_circle_list_size,
+                    unsigned int* pixel_circle_list_capacity,
+                    unsigned int* pixel_circle_lock_list,
+                    int numCircles,
+                    int index) {
+    index += blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= numCircles)
+        return;
+    
+    // read position and radius
+    float3 p = ((float3*) cuConstRendererParams.position)[index];
+    float  rad = cuConstRendererParams.radius[index];
+
+    // compute the bounding box of the circle. The bound is in integer
+    // screen coordinates, so it's clamped to the edges of the screen.
+    short imageWidth = cuConstRendererParams.imageWidth;
+    short imageHeight = cuConstRendererParams.imageHeight;
+    short minX = static_cast<short>(imageWidth * (p.x - rad));
+    short maxX = static_cast<short>(imageWidth * (p.x + rad)) + 1;
+    short minY = static_cast<short>(imageHeight * (p.y - rad));
+    short maxY = static_cast<short>(imageHeight * (p.y + rad)) + 1;
+
+    // a bunch of clamps.  Is there a CUDA built-in for this?
+    short screenMinX = (minX > 0) ? ((minX < imageWidth) ? minX : imageWidth) : 0;
+    short screenMaxX = (maxX > 0) ? ((maxX < imageWidth) ? maxX : imageWidth) : 0;
+    short screenMinY = (minY > 0) ? ((minY < imageHeight) ? minY : imageHeight) : 0;
+    short screenMaxY = (maxY > 0) ? ((maxY < imageHeight) ? maxY : imageHeight) : 0;
+
+    // fprintf(stderr, "%d", screenMaxX - screenMinX);
+
+    // float invWidth = 1.f / imageWidth;
+    // float invHeight = 1.f / imageHeight;
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         while (atomicExch_system(&pixel_circle_lock_list[i], 1U) == 0U);
+    //         i++;
+    //     }
+    // }
+
+    // for all pixels in the bonding box
+    kernelAssignPixelsHelper<<<((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + blockDim.x - 1) / blockDim.x, blockDim>>>(pixel_circle_list, pixel_circle_list_size, pixel_circle_list_capacity, pixel_circle_lock_list, index, screenMinX, screenMaxX, screenMinY, screenMaxY);
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         atomicExch_system(&pixel_circle_lock_list[i], 0U);
+    //         i++;
+    //     }
+    // }
+
+    // for (int pixelY=screenMinY; pixelY<screenMaxY; pixelY++) {
+    //     int i = pixelY * imageWidth + screenMinX;
+    //     for (int pixelX=screenMinX; pixelX<screenMaxX; pixelX++) {
+    //         // int write_idx = atomicAdd(&pixel_circle_list_size[i], 1);
+    //         int write_idx = atomicInc(&pixel_circle_list_size[i], UINT_MAX);
+    //         // if (pixel_circle_list_capacity[index] < write_idx) {
+    //         //     return;
+    //         // }
+    //         // if (10 <= write_idx) {
+    //         //     i++;
+    //         //     continue;
+    //         // }
+    //         while (pixel_circle_list_capacity[i] < write_idx);
+    //         if (pixel_circle_list_capacity[i] == write_idx) {
+    //             unsigned int* new_buf = (unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             // unsigned int* new_buf = new unsigned int*) malloc((pixel_circle_list_capacity[i] + 256) * sizeof(int));
+    //             if (new_buf == nullptr) {
+    //                 printf("failed at assignment\n");
+    //             }
+    //             memcpy(new_buf, pixel_circle_list[i], pixel_circle_list_capacity[i] * sizeof(int));
+    //             free(pixel_circle_list[i]);
+    //             pixel_circle_list[i] = new_buf;
+    //             atomicAdd(&pixel_circle_list_capacity[i], 256);
+    //         }
+    //         // if (!pixel_circle_list[i]) {
+    //         //     pixel_circle_list[i] = (int*)malloc(numCircles * sizeof(int));
+    //         // }
+    //         // __syncthreads();
+    //         // unsigned int* ptr = &pixel_circle_list[i][write_idx];
+    //         // *ptr = index;
+    //         atomicAdd(&pixel_circle_list[i][write_idx], index);
+    //         i++;
+    //     }
+    // }
 }
 
 /* This function is same in both iterative and recursive*/
 __device__ int
-partition(unsigned int* pixel_circle_list, unsigned int* buf, int index, int l, int h) {
-    unsigned int x = getCircle(pixel_circle_list, buf, index, h); 
+partition(unsigned int* arr, int l, int h) {
+    unsigned int x = arr[h]; 
     int i = (l - 1); 
 
     for (int j = l; j <= h - 1; j++) { 
-        if (getCircle(pixel_circle_list, buf, index, j) <= x) { 
+        if (arr[j] <= x) { 
             i++;
-            unsigned int tmp = getCircle(pixel_circle_list, buf, index, i);
-            getCircle(pixel_circle_list, buf, index, i) = getCircle(pixel_circle_list, buf, index, j);
-            getCircle(pixel_circle_list, buf, index, j) = tmp;
+            unsigned int tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
         } 
     }
-    unsigned int tmp = getCircle(pixel_circle_list, buf, index, i + 1);
-    getCircle(pixel_circle_list, buf, index, i + 1) = getCircle(pixel_circle_list, buf, index, h);
-    getCircle(pixel_circle_list, buf, index, h) = tmp;
+    unsigned int tmp = arr[i + 1];
+    arr[i + 1] = arr[h];
+    arr[h] = tmp;
     return (i + 1);
 } 
 
@@ -933,7 +1217,7 @@ partition(unsigned int* pixel_circle_list, unsigned int* buf, int index, int l, 
 l --> Starting index, 
 h --> Ending index */
 __device__ void
-quickSortIterative(unsigned int* pixel_circle_list, unsigned int* buf, int index, int l, int h) {
+quickSortIterative(unsigned int* arr, int l, int h) {
     // Create an auxiliary stack 
     unsigned int* stack = new unsigned int[h - l + 1];
 
@@ -952,7 +1236,7 @@ quickSortIterative(unsigned int* pixel_circle_list, unsigned int* buf, int index
 
         // Set pivot element at its correct position 
         // in sorted array 
-        int p = partition(pixel_circle_list, buf, index, l, h); 
+        int p = partition(arr, l, h); 
 
         // If there are elements on left side of pivot, 
         // then push left side to stack 
@@ -972,9 +1256,8 @@ quickSortIterative(unsigned int* pixel_circle_list, unsigned int* buf, int index
 }
 
 __global__ void
-kernelSortCircles(unsigned int* pixel_circle_list,
+kernelSortCircles(unsigned int** pixel_circle_list,
                   unsigned int* pixel_circle_list_size,
-                  unsigned int* buf,
                   int numCircles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= cuConstRendererParams.imageWidth * cuConstRendererParams.imageHeight)
@@ -982,10 +1265,10 @@ kernelSortCircles(unsigned int* pixel_circle_list,
     int size = pixel_circle_list_size[index];
     if (size == 0)
         return;
-    // unsigned int* circle_list = pixel_circle_list[index];
+    unsigned int* circle_list = pixel_circle_list[index];
     // std::sort(circle_list, circle_list + size);
     // quickSortIterative(circle_list, 0, size - 1);
-    quickSortIterative(pixel_circle_list, buf, index, 0, size - 1);
+    quickSortIterative(circle_list, 0, size - 1);
     // std::sort(circle_list, circle_list + size);
     // thrust::sort(circle_list, circle_list + size);
     // extern __shared__ int shared_data[];
@@ -1011,9 +1294,8 @@ kernelSortCircles(unsigned int* pixel_circle_list,
 }
 
 __global__ void
-kernelShadePixels(unsigned int* pixel_circle_list,
+kernelShadePixels(unsigned int** pixel_circle_list,
                   unsigned int* pixel_circle_list_size,
-                  unsigned int* buf,
                   int imageWidth,
                   int imageHeight) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -1022,7 +1304,7 @@ kernelShadePixels(unsigned int* pixel_circle_list,
     unsigned int size = pixel_circle_list_size[index];
     if (size == 0)
         return;
-    // unsigned int* circle_list = pixel_circle_list[index];
+    unsigned int* circle_list = pixel_circle_list[index];
 
     float invWidth = 1.f / imageWidth;
     float invHeight = 1.f / imageHeight;
@@ -1035,21 +1317,150 @@ kernelShadePixels(unsigned int* pixel_circle_list,
                                          invHeight * (static_cast<float>(pixelY) + 0.5f));
     for (int i = 0; i < size; i++) {
             // read position and radius
-        float3 p = ((float3*) cuConstRendererParams.position)[i];
+        float3 p = ((float3*) cuConstRendererParams.position)[circle_list[i]];
         // float  rad = cuConstRendererParams.radius[i];
         // shadePixel(circle_list[i], pixelCenterNorm, p, &localPixel);
-        shadePixel(getCircle(pixel_circle_list, buf, index, i), pixelCenterNorm, p, &localPixel);
+        shadePixel(circle_list[i], pixelCenterNorm, p, &(((float4*) cuConstRendererParams.imageData)[index]));
+        // break;
     }
-    ((float4*) cuConstRendererParams.imageData)[index] = localPixel;
+    // ((float4*) cuConstRendererParams.imageData)[index] = localPixel;
+}
+
+__global__ void
+testMalloc() {
+    int size = 0;
+    while(1){
+        int* a = (int*)malloc(512*1024*sizeof(int));
+        if (a == nullptr) {
+            break;
+        }
+        size += 512*1024*4;
+    }
+    // printf("malloc size = %d MB\n", size/(1024*1024));
+}
+
+__global__ void
+kernelTestChecker(unsigned int** pixel_circle_list,
+                  unsigned int* pixel_circle_list_size) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= cuConstRendererParams.imageWidth * cuConstRendererParams.imageHeight)
+        return;
+    int size = pixel_circle_list_size[index];
+    if (size == 0)
+        return;
+    unsigned int* circle_list = pixel_circle_list[index];
+    float prev = ((float3*) cuConstRendererParams.position)[circle_list[0]].z;
+    for (int i = 1; i < size; i ++) {
+        if (prev <= ((float3*) cuConstRendererParams.position)[circle_list[i]].z) {
+            // printf("Sort compromized\n");
+            break;
+        }
+        prev = ((float3*) cuConstRendererParams.position)[circle_list[i]].z;
+    }
+}
+
+__global__ void
+kernelProcessPixelCircleList(unsigned int** pixel_circle_list,
+                             unsigned int*  pixel_circle_list_size,
+                             unsigned int*  buf,
+                             unsigned int*  buf_size) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= cuConstRendererParams.imageWidth * cuConstRendererParams.imageHeight)
+        return;
+    
+    int write_idx = atomicAdd(buf_size, pixel_circle_list_size[index]);
+    memcpy(buf + write_idx, pixel_circle_list[index], pixel_circle_list_size[index] * sizeof(unsigned int));
+    free(pixel_circle_list[index]);
+    pixel_circle_list[index] = buf + write_idx;
+}
+
+void 
+exportPixelCircleListToTxt(unsigned int** d_pixel_circle_list,
+                           unsigned int*  d_pixel_circle_list_size,
+                           unsigned int*  d_buf,
+                           int   width,
+                           int   height,
+                           int   numCircles,
+                           const std::string& outFilename)
+{
+    std::vector<unsigned int> h_buf(numCircles * 512 * sizeof(unsigned int), 0);
+    cudaCheckError(cudaMemcpy(h_buf.data(),
+                              d_buf,
+                              numCircles * 512 * sizeof(unsigned int),
+                              cudaMemcpyDeviceToHost));
+
+    int totalPixels = width * height;
+
+    // 1) 从 device 拷贝 pixel_circle_list (指针数组) 到 host
+    std::vector<unsigned int*> h_pixel_circle_list(totalPixels, nullptr);
+    cudaCheckError(cudaMemcpy(h_pixel_circle_list.data(),
+                              d_pixel_circle_list,
+                              totalPixels * sizeof(unsigned int*),
+                              cudaMemcpyDeviceToHost));
+
+    // 2) 从 device 拷贝 pixel_circle_list_size (每个像素的 circle 数量) 到 host
+    std::vector<unsigned int> h_pixel_circle_list_size(totalPixels);
+    cudaCheckError(cudaMemcpy(h_pixel_circle_list_size.data(),
+                              d_pixel_circle_list_size,
+                              totalPixels * sizeof(unsigned int),
+                              cudaMemcpyDeviceToHost));
+
+    // 3) 打开输出文本文件
+    std::ofstream outFile(outFilename);
+    if (!outFile.is_open())
+    {
+        std::cerr << "Error: could not open output file " << outFilename << std::endl;
+        return;
+    }
+
+    // 4) 对每个像素 i，读取它的 circle 列表并写入文件
+    for (int i = 0; i < totalPixels; i++)
+    {
+        int size_i = h_pixel_circle_list_size[i];
+        // 可以选择先写一下“像素索引”和“该像素中 circle 的数量”
+        outFile << "Pixel " << i << " has " << size_i << " circles: ";
+        // if (size_i > 64) {
+        //     std::cout << "Wow-===========================" << std::endl;
+        // }
+
+        if (size_i > 0)
+        {
+            // 这时 h_pixel_circle_list[i] 是一个指向 GPU 上的 int 数组
+            // 我们需要再分配一块 host 缓存，把这块数据拷回来。
+            auto begin = h_buf.begin() + (h_pixel_circle_list[i] - d_buf);
+            std::vector<unsigned int> circleData(begin, begin + size_i);
+
+            // cudaCheckError(cudaMemcpy(circleData.data(),
+            //                           h_pixel_circle_list[i],
+            //                           size_i * sizeof(int),
+            //                           cudaMemcpyDeviceToHost));
+
+            // 将 circleData 中的内容写到文件
+            for (int c = 0; c < size_i; c++)
+            {
+                outFile << circleData[c] << " ";
+            }
+        }
+
+        outFile << "\n";  // 换行
+    }
+
+    outFile.close();
+
+    std::cout << "Export done. Wrote file: " << outFilename << std::endl;
 }
 
 void
 CudaRenderer::render() {
+    cudaCheckError(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 6UL * 1024UL * 1024UL * 1024UL));
 
     // 256 threads per block is a healthy number
     dim3 blockDim(256, 1);
     // dim3 gridDim((numCircles + blockDim.x - 1) / blockDim.x);
     dim3 gridDim((image->width * image->height + blockDim.x - 1) / blockDim.x);
+    // fprintf(stderr, "grid: %d\n", gridDim.x);
+    // fprintf(stderr, "blockDim: %d\n", blockDim.x);
+    // return;
 
     //TODO: perform screen per pixel shading in a separate kernel
     //TODO: Compute radius parallelly: compare kernel
@@ -1057,17 +1468,27 @@ CudaRenderer::render() {
     //: first group boundbox = per circle, then assign task kernel
     //TODO: Get Job Done // render kernel: per pixel 
 
-    unsigned int* pixel_circle_list = nullptr;
-    cudaCheckError(cudaMalloc(&pixel_circle_list, image->width * image->height * sizeof(unsigned int)));
-    cudaCheckError(cudaMemset(pixel_circle_list, 0, image->width * image->height * sizeof(unsigned int)));
+    // testMalloc<<<1, 1>>>();
+    // cudaDeviceSynchronize();
+    // return;
 
-    unsigned int* buf = nullptr;
-    cudaCheckError(cudaMalloc(&buf, image->width * image->height * 1024 * sizeof(unsigned int)));
-    cudaCheckError(cudaMemset(buf, 0, image->width * image->height * 1024 * sizeof(unsigned int)));
+    // fprintf(stderr, "float1 size: %d\n", sizeof(float1));
+    // fprintf(stderr, "float2 size: %d\n", sizeof(float2));
+    // fprintf(stderr, "float3 size: %d\n", sizeof(float3));
+    // fprintf(stderr, "float4 size: %d\n", sizeof(float4));
 
-    unsigned int* buf_size = nullptr;
-    cudaCheckError(cudaMalloc(&buf_size, sizeof(unsigned int)));
-    cudaCheckError(cudaMemset(buf_size, 0, sizeof(unsigned int)));
+    // fprintf(stderr, "float1 size: %d\n", ((float1*) nullptr) + 1);
+    // fprintf(stderr, "float2 size: %d\n", ((float2*) nullptr) + 1);
+    // fprintf(stderr, "float3 size: %d\n", ((float3*) nullptr) + 1);
+    // fprintf(stderr, "float4 size: %d\n", ((float4*) nullptr) + 1);
+
+    unsigned int** pixel_circle_list = nullptr;
+    cudaCheckError(cudaMalloc(&pixel_circle_list, image->width * image->height * sizeof(unsigned int*)));
+    cudaCheckError(cudaMemset(pixel_circle_list, 0, image->width * image->height * sizeof(unsigned int*)));
+
+    unsigned int* pixel_circle_lock_list = nullptr;
+    cudaCheckError(cudaMalloc(&pixel_circle_lock_list, image->width * image->height * sizeof(unsigned int)));
+    cudaCheckError(cudaMemset(pixel_circle_lock_list, 0, image->width * image->height * sizeof(unsigned int)));
 
     unsigned int* pixel_circle_list_size = nullptr;
     cudaCheckError(cudaMalloc(&pixel_circle_list_size, image->width * image->height * sizeof(unsigned int)));
@@ -1079,36 +1500,87 @@ CudaRenderer::render() {
 
     kernelInitializePixelCircleList<<<gridDim, blockDim>>>(pixel_circle_list,
                                                            pixel_circle_list_capacity,
-                                                           buf,
-                                                           buf_size,
                                                            numCircles);    
     cudaCheckError(cudaDeviceSynchronize());
 
     kernelAssignPixels<<<(numCircles + blockDim.x - 1) / blockDim.x, blockDim>>>(pixel_circle_list,
                                                                                  pixel_circle_list_size,
                                                                                  pixel_circle_list_capacity,
-                                                                                 buf,
-                                                                                 buf_size,
+                                                                                 pixel_circle_lock_list,
                                                                                  numCircles);
     cudaCheckError(cudaDeviceSynchronize());
 
-    fprintf(stderr, "fuck\n");
+    // bool flag = true;
+    // for (int i = 420; i != 420 || flag; i = (i + numCircles - 17) % numCircles) {
+    //     kernelAssignPixels2<<<1, 1>>>(pixel_circle_list,
+    //                                   pixel_circle_list_size,
+    //                                   pixel_circle_list_capacity,
+    //                                   pixel_circle_lock_list,
+    //                                   numCircles,
+    //                                   i);
+    //     cudaCheckError(cudaDeviceSynchronize());
+    //     flag = false;
+    // }
+
+    // for (int i = 0; i < numCircles; i += 8 * blockDim.x) {
+    //     kernelAssignPixels3<<<8, blockDim>>>(pixel_circle_list,
+    //                                   pixel_circle_list_size,
+    //                                   pixel_circle_list_capacity,
+    //                                   pixel_circle_lock_list,
+    //                                   numCircles,
+    //                                   i);
+    //     cudaCheckError(cudaDeviceSynchronize());
+    // }
+
+    // fprintf(stderr, "fuck\n");
 
     // kernelSortCircles<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size, buf, numCircles);
+    kernelSortCircles<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size, numCircles);
+    cudaCheckError(cudaDeviceSynchronize());
+
+    // kernelTestChecker<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size);
     // cudaCheckError(cudaDeviceSynchronize());
+    // return;
 
     // float4* localPixels = nullptr;
     // cudaMalloc(&localPixels, image->width * image->height * sizeof(float4));
     // cudaMemset(localPixels, 0, image->width * image->height * sizeof(float4));
 
-    kernelShadePixels<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size, buf, image->width, image->height);
+    kernelShadePixels<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size, image->width, image->height);
     cudaCheckError(cudaDeviceSynchronize());
+
+    // unsigned int* buf = nullptr;
+    // cudaCheckError(cudaMalloc(&buf, numCircles * 512 * sizeof(unsigned int)));
+    // unsigned int* buf_size = nullptr;
+    // cudaCheckError(cudaMalloc(&buf_size, sizeof(unsigned int)));
+    // kernelProcessPixelCircleList<<<gridDim, blockDim>>>(pixel_circle_list, pixel_circle_list_size, buf, buf_size);
+    // cudaCheckError(cudaDeviceSynchronize());
+
+    // exportPixelCircleListToTxt(pixel_circle_list, pixel_circle_list_size, buf, image->width, image->height, numCircles, "lala.txt");
+
+    // int dims = image->width * image->height;
+    // unsigned int** pixel_circle_list_host = new unsigned int*[dims];
+    // cudaCheckError(cudaMemcpy(pixel_circle_list_host, pixel_circle_list, dims * sizeof(unsigned int*), cudaMemcpyDeviceToHost));
+    // unsigned int* pixel_circle_list_size_host = new unsigned int[dims];
+    // cudaCheckError(cudaMemcpy(pixel_circle_list_size_host, pixel_circle_list_size, dims * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    // std::fstream outf("pixel_circle_list.txt", std::fstream::out);
+    // for (int i = 0; i < dims; i++) {
+    //     unsigned int* circle_list_host = new unsigned int[pixel_circle_list_size_host[i]];
+    //     cudaCheckError(cudaMemcpy(circle_list_host, pixel_circle_list_host[i], pixel_circle_list_size_host[i] * sizeof(unsigned int), cudaMemcpyDeviceToHost));
+    //     for (int j = 0; j < pixel_circle_list_size_host[i]; j++) {
+    //         outf << circle_list_host[j] << ',';
+    //     }
+    //     outf << '\n';
+    //     delete[] circle_list_host;
+    // }
+    // outf.close();
+    // delete[] pixel_circle_list_host;
+    // delete[] pixel_circle_list_size_host;
 
     // kernelDeletePixelCircleList<<<gridDim, blockDim>>>(pixel_circle_list, numCircles);
     // cudaCheckError(cudaDeviceSynchronize());
 
     cudaCheckError(cudaFree(pixel_circle_list));
-    cudaCheckError(cudaFree(buf));
     cudaCheckError(cudaFree(pixel_circle_list_size));
 
     // cudaMemcpy(cudaDeviceImageData, localPixels, sizeof(float) * 4 * image->width * image->height, cudaMemcpyDeviceToDevice);

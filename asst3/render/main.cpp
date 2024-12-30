@@ -6,6 +6,7 @@
 #include "refRenderer.h"
 #include "cudaRenderer.h"
 #include "platformgl.h"
+#include "ppm.h"
 
 #define DEFAULT_IMAGE_SIZE 1024
 
@@ -164,6 +165,13 @@ int main(int argc, char** argv)
 
         // Check the correctness
         CheckBenchmark(ref_renderer, cuda_renderer, 0, 1, frameFilename);
+
+        char filename0[1024];
+        char filename1[1024];
+        sprintf(filename0, "%s_%04d.ppm", frameFilename.c_str(), 0);
+        writePPMImage(cuda_renderer->getImage(), "cuda.ppm");
+        sprintf(filename1, "%s_%04d.ppm", frameFilename.c_str(), 1);
+        writePPMImage(ref_renderer->getImage(), "ref.ppm");
     }
     else {
 
